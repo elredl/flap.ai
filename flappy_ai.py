@@ -7,6 +7,8 @@ import gymnasium as gym
 from gymnasium import spaces
 from typing import Tuple, Dict, Any, Optional
 
+from FlappyBird.src.flappy import Flappy
+
 # environment: flappy bird
 # state: player (y, y_vel), pipe(x, bottom-top-y, top-bottom-y), score
 # actions: flap, no_flap
@@ -35,9 +37,10 @@ class FlappyBirdEnv(gym.Env):
         self.observation_space = spaces.Box(-high, high, dtype=np.float32)
 
         # ---- Pygame/Game handles (fill these in) ----
-        self.game = None
-        self.screen = None
-        self.clock = None
+        self.game = Flappy()
+        self.screen = self.game.config.screen
+        self.clock = self.game.config.clock
+        self.fps = self.game.config.fps
 
         # Caches
         self.player = None

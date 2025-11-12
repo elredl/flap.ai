@@ -18,21 +18,22 @@ from .utils import GameConfig, Images, Sounds, Window
 
 
 class Flappy:
-    def __init__(self):
+    
+    def __init__(self, config: GameConfig | None = None):
         pygame.init()
-        pygame.display.set_caption("Flappy Bird")
-        window = Window(288, 512)
-        screen = pygame.display.set_mode((window.width, window.height))
-        images = Images()
-
-        self.config = GameConfig(
-            screen=screen,
-            clock=pygame.time.Clock(),
-            fps=30,
-            window=window,
-            images=images,
-            sounds=Sounds(),
-        )
+        if config is None:
+            pygame.display.set_caption("Flappy Bird")
+            window = Window(288, 512)
+            screen = pygame.display.set_mode((window.width, window.height))
+            config = GameConfig(
+                screen=screen,
+                clock=pygame.time.Clock(),
+                fps=30,
+                window=window,
+                images=Images(),
+                sounds=Sounds(),
+            )
+        self.config = config
 
     async def start(self):
         while True:
