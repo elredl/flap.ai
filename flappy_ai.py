@@ -61,7 +61,7 @@ class FlappyBirdEnv(gym.Env):
         if self.render_mode == "human":
             if not pygame.get_init():
                 pygame.init()
-            self.screen = pygame.display.set_mode((288, 512))  # replace with your game size
+            self.screen = pygame.display.set_mode((288, 512))
             self.clock = pygame.time.Clock()
         else:
             if not pygame.get_init():
@@ -134,18 +134,29 @@ class FlappyBirdEnv(gym.Env):
 
     # ---------------- Game glue (replace TODOs) ----------------
     def _new_game(self):
-        """Reset your internal game objects here."""
-        # TODO: wire to your code
-        # eg: self.game = Game(seed=self._rng.randint(0, 10_000))
-        # self.player = self.game.player
-        # self.pipes = self.game.pipes
+        """Resets your internal game objects."""
+        episode_seed = self._rng.randint(0, 2**31-1)
+        pipe_rng = random.Random(episode_seed)
+        self.game = Flappy()
+
+        self.game.background = Background(self.game.config)
+        self.game.floor = Floor(self.game.config)
+        self.game.player = Player(self.game.config)
+        self.welcome_message = WelcomeMessage(self.game.config)
+        self.game_over_message = GameOver(self.game.config)
+        self.pipes = Pipes(self.game.config)
+        self.game.score = Score(self.game.config)
+
+        self.player = self.game.player
+        self.pipes = self.game.pipes
+        self.score = 0
+
         pass
 
     def _do_action(self, action: int):
-        """Map action to your game input (flap or no-op)."""
-        # TODO:
-        # if action == 1:
-        #     self.game.flap()
+        """Maps action to your game input (flap or no-op)."""
+        if action == 1:
+            self.game.player.flap()
         pass
 
     def _tick_game(self):
@@ -167,24 +178,34 @@ class FlappyBirdEnv(gym.Env):
 
     def _next_pipe(self):
         """Return the first pipe ahead of the player."""
-        # TODO: pick the pipe with x > player.x with smallest x
-        # return next_pipe, gap_center_y
-        return None, None
+        player_x = self.player.x
+        future_pipes = [p for p in self.pipes.upper if p.x + p.w > player.x]
+        if not future_pipes:
+            return None, None
+        upper = min(future_pipes, key=lambda p: p.x)
+        idx = self.pipes.upper.index(upper)
+        lower = self.pipes.lower[idx]
+
+        upper_bottom = upper.y + upper.h
+        lower_top = lower.y
+        gap_y = (upper.bottom - lower.top)/2
+        return upper, gap_y
 
     def _get_obs(self) -> np.ndarray:
-        # Pull raw values from your objects
-        # --- TODO: fetch from your actual objects ---
-        # px, py = self.player.x, self.player.y
-        # vy = self.player.vy
-        # pipe, gap_y = self._next_pipe()
-        # dx = pipe.x - px
-        # vx = pipe.vx
-        # Compose and normalize:
-        py = 0.0
-        vy = 0.0
-        dx = 0.0
-        dy = 0.0
-        vx = 0.0
+        """Pull raw values from your objects"""
+        px = self.player.cx
+        py = self.player.y
+        vy = self.player.vel_y
+
+        pipe, gap_y = self._next_pipe()
+        if pipe is None:
+            dx = 0.0
+            dy = 0.0
+            vx = 0.0
+        else:
+            dx = pipe.cx - px
+            vx = pipe.vel_x
+            dy = gap_y - py
 
         obs = np.array([py, vy, dx, dy, vx], dtype=np.float32)
         return self._normalize(obs)

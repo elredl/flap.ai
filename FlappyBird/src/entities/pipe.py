@@ -19,9 +19,10 @@ class Pipes(Entity):
     upper: List[Pipe]
     lower: List[Pipe]
 
-    def __init__(self, config: GameConfig) -> None:
+    def __init__(self, config: GameConfig, rng: random.Random | None = None) -> None:
         super().__init__(config)
-        self.pipe_gap = 120
+        self.rng = rng
+        self.pipe_gap = 120 
         self.top = 0
         self.bottom = self.config.window.viewport_height
         self.upper = []
@@ -82,7 +83,7 @@ class Pipes(Entity):
         # y of gap between upper and lower pipe
         base_y = self.config.window.viewport_height
 
-        gap_y = random.randrange(0, int(base_y * 0.6 - self.pipe_gap))
+        gap_y = self.rng.randrange(0, int(base_y * 0.6 - self.pipe_gap))
         gap_y += int(base_y * 0.2)
         pipe_height = self.config.images.pipe[0].get_height()
         pipe_x = self.config.window.width + 10
