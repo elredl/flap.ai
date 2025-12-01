@@ -43,6 +43,8 @@ class FlappyBirdEnv(gym.Env):
         self.screen = self.game.config.screen
         self.clock = self.game.config.clock
         self.fps = self.game.config.fps
+        self.flap_cooldown = 0
+        self.min_flap_cooldown = 5 
 
         # Caches
         self.player = None
@@ -144,18 +146,22 @@ class FlappyBirdEnv(gym.Env):
         self.game_over_message = GameOver(self.game.config)
         self.game.pipes = Pipes(self.game.config, pipe_rng)
         self.game.score = Score(self.game.config)
+        self.game.player.set_mode(PlayerMode.NORMAL)
 
         self.player = self.game.player
         self.pipes = self.game.pipes
         self.score = 0
 
-        pass
 
     def _do_action(self, action: int):
         """Maps action to your game input (flap or no-op)."""
+        if self.flap_cooldown > 0:
+            self.flap_cooldown -= 1
+            return
+
         if action == 1:
             self.game.player.flap()
-        pass
+            self.flap_cooldown = self.min_flap_cooldown
 
     def _tick_game(self):
         """Advance one frame (no human events during training)."""
@@ -168,7 +174,6 @@ class FlappyBirdEnv(gym.Env):
         if self.render_mode == "human":
             pygame.display.update()
         self.game.config.tick()
-        pass
 
     def _update_score_from_pipes(self):
         for pipe in self.game.pipes.upper:
