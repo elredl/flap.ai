@@ -4,10 +4,12 @@ import math
 import numpy as np
 import pygame
 import gymnasium as gym
+import random
 from gymnasium import spaces
 from typing import Tuple, Dict, Any, Optional
 
-from FlappyBird.src.flappy import Flappy
+# from FlappyBird.src.flappy import Flappy
+from FlappyBird.src.flappy import *
 
 # environment: flappy bird
 # state: player (y, y_vel), pipe(x, bottom-top-y, top-bottom-y), score
@@ -68,12 +70,6 @@ class FlappyBirdEnv(gym.Env):
                 pygame.init()
             self.clock = pygame.time.Clock()
 
-        # --- TODO: call into your game’s reset/new_game ---
-        # Example placeholders:
-        # self.game = Game()
-        # self.game.reset()
-        # self.player = self.game.player
-        # self.pipes = self.game.pipes
         self._new_game()
 
         self.score = 0
@@ -94,8 +90,10 @@ class FlappyBirdEnv(gym.Env):
             self._tick_game()
 
             # Reward for pipe passes; compute delta if game tracks score
+            old_score = self._get_score()
+            self._update_score_from_pipes()
             new_score = self._get_score()
-            if new_score > self.score:
+            if new_score > old_score:
                 reward += (new_score - self.score) * 1.0
                 self.score = new_score
 
@@ -144,7 +142,7 @@ class FlappyBirdEnv(gym.Env):
         self.game.player = Player(self.game.config)
         self.welcome_message = WelcomeMessage(self.game.config)
         self.game_over_message = GameOver(self.game.config)
-        self.pipes = Pipes(self.game.config)
+        self.game.pipes = Pipes(self.game.config, pipe_rng)
         self.game.score = Score(self.game.config)
 
         self.player = self.game.player
@@ -161,25 +159,32 @@ class FlappyBirdEnv(gym.Env):
 
     def _tick_game(self):
         """Advance one frame (no human events during training)."""
-        # TODO:
-        # self.game.update()  # physics, spawn, collisions
-        # self.game.draw(self.screen)  # only if rendering
+        self.game.background.tick()
+        self.game.floor.tick()
+        self.game.pipes.tick()
+        self.game.score.tick()
+        self.game.player.tick()
+
+        if self.render_mode == "human":
+            pygame.display.update()
+        self.game.config.tick()
         pass
 
+    def _update_score_from_pipes(self):
+        for pipe in self.game.pipes.upper:
+            if self.game.player.crossed(pipe):
+                self.game.score.add()
+
     def _is_dead(self) -> bool:
-        # TODO: return True if collision or out-of-bounds
-        # Example:
-        # return self.game.collided or self.player.y < 0 or self.player.y > FLOOR_Y
-        return False
+        return self.game.player.collided(self.game.pipes, self.game.floor)
 
     def _get_score(self) -> int:
-        # TODO: return your game’s score
-        return self.score
+        return self.game.score.score
 
     def _next_pipe(self):
         """Return the first pipe ahead of the player."""
         player_x = self.player.x
-        future_pipes = [p for p in self.pipes.upper if p.x + p.w > player.x]
+        future_pipes = [p for p in self.pipes.upper if p.x + p.w > player_x]
         if not future_pipes:
             return None, None
         upper = min(future_pipes, key=lambda p: p.x)
@@ -188,7 +193,7 @@ class FlappyBirdEnv(gym.Env):
 
         upper_bottom = upper.y + upper.h
         lower_top = lower.y
-        gap_y = (upper.bottom - lower.top)/2
+        gap_y = (upper_bottom - lower_top)/2
         return upper, gap_y
 
     def _get_obs(self) -> np.ndarray:

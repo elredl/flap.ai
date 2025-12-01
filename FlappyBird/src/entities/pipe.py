@@ -21,7 +21,7 @@ class Pipes(Entity):
 
     def __init__(self, config: GameConfig, rng: random.Random | None = None) -> None:
         super().__init__(config)
-        self.rng = rng
+        self.rng = rng or random.Random()
         self.pipe_gap = 120 
         self.top = 0
         self.bottom = self.config.window.viewport_height
