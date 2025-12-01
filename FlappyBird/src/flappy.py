@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import os
 
 import pygame
 from pygame.locals import K_ESCAPE, K_SPACE, K_UP, KEYDOWN, QUIT
@@ -20,6 +21,7 @@ from .utils import GameConfig, Images, Sounds, Window
 class Flappy:
     
     def __init__(self, config: GameConfig | None = None):
+        os.environ["SDL_AUDIODRIVER"] = "dummy"
         pygame.init()
         if config is None:
             pygame.display.set_caption("Flappy Bird")
