@@ -4,4 +4,4 @@ This repo is dedicated to the creation of a Flappy Bird reinforcement learning m
 
 Install dependencies for this Repo using 
 
-```pip install -r requirements.txt```
+```pip install -r dependencies.txt```
