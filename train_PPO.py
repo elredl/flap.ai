@@ -47,19 +47,19 @@ def train(states, actions, old_logps, advantages, returns):
 
 s, _ = env.reset()
 s = tf.constant(s, tf.float32)
-buf = {'s':[], 'a':[], 'r':[], 'd':[], 'logp':[], 'v':[]}
+buf = {'state':[], 'action':[], 'reward':[], 'd':[], 'logp':[], 'value':[]}
 
 try:
     for step in range(1000000):
         for _ in range(2048):
             a, logp, v = get_action_value(s)
             ns, r, done, _, info = env.step(a)
-            buf['s'].append(s)
-            buf['a'].append(a)
-            buf['r'].append(r)
+            buf['state'].append(s)
+            buf['action'].append(a)
+            buf['reward'].append(r)
             buf['d'].append(done)
             buf['logp'].append(logp)
-            buf['v'].append(v.numpy())
+            buf['value'].append(v.numpy())
             s = tf.constant(ns, tf.float32)
             if done:
                 print("Score:", info["score"])
@@ -67,25 +67,25 @@ try:
                 s = tf.constant(s, tf.float32)
 
         _, _, last_v = get_action_value(s)
-        values = [v for v in buf['v']] + [last_v.numpy()]
+        values = [v for v in buf['value']] + [last_v.numpy()]
         adv = []
         gae = 0
-        for t in reversed(range(len(buf['r']))):
-            delta = buf['r'][t] + gama * values[t + 1] * (1 - buf['d'][t]) - values[t]
+        for t in reversed(range(len(buf['reward']))):
+            delta = buf['reward'][t] + gama * values[t + 1] * (1 - buf['d'][t]) - values[t]
             gae = delta + gama * lam * (1 - buf['d'][t]) * gae
             adv.append(gae)
         adv = adv[::-1]
         adv = (adv - np.mean(adv)) / (np.std(adv) + 1e-8)
         ret = np.array(adv) + values[:-1]
 
-        states = tf.stack(buf['s'])
-        actions = tf.constant(buf['a'], tf.int32)
+        states = tf.stack(buf['state'])
+        actions = tf.constant(buf['action'], tf.int32)
         old_logps = tf.stack(buf['logp'])
         advantages = tf.constant(adv, tf.float32)
         returns = tf.constant(ret, tf.float32)
 
-        # Train for 10 epochs
-        for _ in range(10):
+        # Train for 4 epochs
+        for _ in range(4):
             train(states, actions, old_logps, advantages, returns)
 
         for k in buf: buf[k].clear()
